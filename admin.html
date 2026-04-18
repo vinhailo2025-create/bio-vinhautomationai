@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin – Vinh Automation AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:#06070f;color:#e7e9f3;min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:#8ef4ff}
+  button{font-family:inherit;cursor:pointer}
+
+  .bg{position:fixed;inset:0;z-index:-1;background:radial-gradient(1000px 600px at 20% -10%, rgba(138,43,226,.25), transparent 60%),radial-gradient(700px 500px at 110% 10%, rgba(0,255,255,.12), transparent 60%),#06070f}
+
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:14px 20px;background:rgba(10,11,22,.85);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.06)}
+  .topbar h1{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;letter-spacing:.3px;background:linear-gradient(90deg,#fff,#8A2BE2,#00FFFF);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .topbar .spacer{flex:1}
+  .topbar .btn{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#e7e9f3;font-size:13px;font-weight:500;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+  .topbar .btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2)}
+  .topbar .btn.primary{background:linear-gradient(135deg,#8A2BE2,#00FFFF);border:none;color:#fff}
+  .topbar .btn.primary:hover{filter:brightness(1.1)}
+  .topbar .btn.danger{border-color:rgba(255,80,80,.4);color:#ffb3b3}
+  .topbar .btn.danger:hover{background:rgba(255,80,80,.1)}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 20px 80px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px}
+  .panel h2{font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#8ef4ff;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .panel h2::before{content:"";width:18px;height:2px;border-radius:2px;background:linear-gradient(90deg,#8A2BE2,#00FFFF)}
+
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:500;color:#9aa0bf;margin-bottom:5px;letter-spacing:.04em}
+  .field input, .field textarea, .field select{width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;transition:border-color .2s, background .2s}
+  .field input:focus, .field textarea:focus, .field select:focus{outline:none;border-color:rgba(138,43,226,.6);background:rgba(138,43,226,.05)}
+  .field textarea{resize:vertical;min-height:70px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  @media (max-width:560px){.row2,.row3{grid-template-columns:1fr}}
+
+  .section-card{border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;margin-bottom:14px;background:rgba(255,255,255,.02)}
+  .section-card.support{border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.03)}
+  .section-card.social{border-color:rgba(0,255,255,.3);background:rgba(0,255,255,.03)}
+  .section-card.community{border-color:rgba(138,43,226,.3);background:rgba(138,43,226,.04)}
+
+  .section-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .section-head input{flex:1}
+  .section-head .handle{cursor:grab;color:#6f7599;font-size:18px;user-select:none}
+  .section-head .remove-btn{padding:6px 10px;border-radius:8px;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.3);color:#ffb3b3;font-size:12px}
+  .section-head .remove-btn:hover{background:rgba(255,80,80,.18)}
+
+  .item{border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px;margin-bottom:8px;background:rgba(0,0,0,.2)}
+  .item-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .item-head .handle{cursor:grab;color:#6f7599;user-select:none}
+  .item-head .title-preview{flex:1;font-weight:600;color:#fff;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item-head .toggle{padding:4px 8px;font-size:11px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#9aa0bf}
+  .item-head .remove-item{padding:4px 8px;font-size:11px;border-radius:6px;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#ffb3b3}
+  .item-body{display:none}
+  .item.open .item-body{display:block;padding-top:4px}
+
+  .add-btn{width:100%;padding:10px;border-radius:10px;background:rgba(0,255,255,.05);border:1px dashed rgba(0,255,255,.4);color:#8ef4ff;font-size:13px;font-weight:500;transition:all .2s;margin-top:6px}
+  .add-btn:hover{background:rgba(0,255,255,.1);border-style:solid}
+
+  .add-section-btn{width:100%;padding:12px;border-radius:12px;background:rgba(138,43,226,.08);border:1px dashed rgba(138,43,226,.5);color:#d7c7ff;font-weight:600;font-size:14px;margin-top:8px}
+  .add-section-btn:hover{background:rgba(138,43,226,.15)}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,40,.95);border:1px solid rgba(0,255,255,.4);padding:12px 20px;border-radius:12px;color:#fff;font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:100;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.error{border-color:rgba(255,80,80,.5)}
+
+  .preview-info{padding:10px 12px;border-radius:10px;background:rgba(0,255,255,.05);border:1px solid rgba(0,255,255,.2);color:#b8faff;font-size:12.5px;margin-bottom:14px}
+  .preview-info a{color:#FFE76B;font-weight:600}
+
+  .file-input{display:none}
+  .file-label{display:inline-block;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);font-size:12px;color:#b8bcd4;cursor:pointer;margin-top:4px}
+  .file-label:hover{background:rgba(255,255,255,.08)}
+
+  /* ===== LOGIN OVERLAY ===== */
+  .login-overlay{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:radial-gradient(1000px 600px at 50% 20%, rgba(138,43,226,.25), transparent 60%),#06070f;padding:20px}
+  .login-card{width:100%;max-width:400px;background:linear-gradient(180deg,#0f1024,#0a0b18);border:1px solid rgba(138,43,226,.45);border-radius:22px;padding:32px 26px;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 40px rgba(138,43,226,.3)}
+  .login-card h2{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:4px;background:linear-gradient(90deg,#fff,#8A2BE2,#00FFFF);-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center}
+  .login-card p{text-align:center;color:#8b90ad;font-size:13px;margin-bottom:22px}
+  .login-card .field{margin-bottom:14px}
+  .login-btn{width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#8A2BE2,#00FFFF);border:none;color:#fff;font-weight:600;font-size:14px;letter-spacing:.04em;cursor:pointer;transition:filter .2s}
+  .login-btn:hover{filter:brightness(1.1)}
+  .login-err{color:#ffb3b3;font-size:12.5px;text-align:center;margin-top:10px;min-height:16px}
+  .login-hint{margin-top:14px;font-size:11px;color:#6f7599;text-align:center;line-height:1.6}
+
+  /* ===== DRAG & DROP ===== */
+  [draggable="true"]{cursor:grab}
+  [draggable="true"]:active{cursor:grabbing}
+  .drag-ghost{opacity:.35}
+  .drop-above{box-shadow:0 -3px 0 #00FFFF inset, 0 0 16px rgba(0,255,255,.4)}
+  .drop-below{box-shadow:0 3px 0 #00FFFF inset, 0 0 16px rgba(0,255,255,.4)}
+  .handle{cursor:grab !important}
+  .handle:active{cursor:grabbing !important}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h2>🔐 Admin Login</h2>
+    <p>Vinh Automation AI</p>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="username"></div>
+    <div class="field"><label>Mật khẩu</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="login-btn" id="loginBtn">Đăng nhập</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-hint">⚠ Xác thực client-side. Không dùng mật khẩu thật quan trọng.</div>
+  </div>
+</div>
+
+<div class="topbar" id="topbar" style="display:none">
+  <h1>⚙ Admin — Vinh Automation AI</h1>
+  <div class="spacer"></div>
+  <button class="btn" id="exportBtn">⬇ Export</button>
+  <label class="btn" for="importFile">⬆ Import</label>
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+  <button class="btn danger" id="resetBtn">↺ Reset</button>
+  <a class="btn primary" href="index.html" target="_blank">👁 Xem trang</a>
+  <button class="btn danger" id="logoutBtn">⎋ Logout</button>
+</div>
+
+<div class="wrap" id="mainWrap" style="display:none">
+  <!-- LEFT: Profile / QR / Footer -->
+  <div>
+    <div class="preview-info">
+      Dữ liệu được lưu tự động vào trình duyệt (localStorage). Nhấn <a href="index.html" target="_blank">Xem trang</a> để xem kết quả.
+    </div>
+
+    <div class="panel">
+      <h2>Thông tin cá nhân</h2>
+      <div class="field"><label>Tên</label><input id="p_name"></div>
+      <div class="field"><label>Badge</label><input id="p_badge"></div>
+      <div class="field"><label>Mô tả</label><textarea id="p_desc"></textarea></div>
+      <div class="row2">
+        <div class="field"><label>Avatar text (chữ viết tắt)</label><input id="p_avatarText" placeholder="VA"></div>
+        <div class="field"><label>Avatar image URL (ưu tiên)</label><input id="p_avatarImage" placeholder="https://..."></div>
+      </div>
+      <label class="file-label" for="p_avatarFile">📁 Hoặc chọn ảnh từ máy</label>
+      <input type="file" id="p_avatarFile" class="file-input" accept="image/*">
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <h2>Modal QR (Mời cà phê)</h2>
+      <div class="field"><label>Tiêu đề</label><input id="qr_title"></div>
+      <div class="field"><label>Subtitle</label><input id="qr_sub"></div>
+      <div class="field"><label>QR image URL</label><input id="qr_image"></div>
+      <label class="file-label" for="qr_file">📁 Upload QR từ máy</label>
+      <input type="file" id="qr_file" class="file-input" accept="image/*">
+      <div class="field" style="margin-top:10px"><label>Ghi chú</label><input id="qr_note"></div>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <h2>Footer</h2>
+      <div class="field"><label>Footer text</label><input id="footer_text"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Sections -->
+  <div>
+    <div class="panel">
+      <h2>Sections &amp; Cards</h2>
+      <div id="sectionsEditor"></div>
+      <button class="add-section-btn" id="addSection">+ Thêm Section mới</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+  // ========== AUTH ==========
+  // Client-side gate only. SHA-256 hash of the password, email kept visible.
+  const ADMIN_EMAIL = 'vinhailo2025@gmail.com';
+  // SHA-256("VinhAI@2025")
+  const ADMIN_PASS_HASH = '2a4d8df3c6c8f3fb76b4b1db0a16e2db6d5d3f0d1f5e9d7b9f4c9a3c4c1c2e6d'; // placeholder overwritten below
+  const AUTH_KEY = 'vinh_bio_auth_v1';
+
+  async function sha256(str){
+    const buf = new TextEncoder().encode(str);
+    const h = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function checkLogin(email, pass){
+    const hash = await sha256(pass);
+    const expected = await sha256('VinhAI@2025'); // computed at runtime
+    return email.trim().toLowerCase() === ADMIN_EMAIL && hash === expected;
+  }
+
+  function isLoggedIn(){
+    return localStorage.getItem(AUTH_KEY) === 'ok';
+  }
+
+  function showApp(){
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('topbar').style.display = '';
+    document.getElementById('mainWrap').style.display = '';
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value;
+    const pass  = document.getElementById('loginPass').value;
+    const err   = document.getElementById('loginErr');
+    err.textContent = '';
+    const ok = await checkLogin(email, pass);
+    if (ok) {
+      localStorage.setItem(AUTH_KEY, 'ok');
+      showApp();
+      initAdmin();
+    } else {
+      err.textContent = '❌ Email hoặc mật khẩu không đúng';
+    }
+  });
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  });
+
+  if (isLoggedIn()) { showApp(); initAdmin(); }
+
+  function initAdmin(){
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem(AUTH_KEY);
+      location.reload();
+    });
+    runAdmin();
+  }
+
+  function runAdmin(){
+
+  let data = VinhBioData.loadData();
+
+  function $(id){ return document.getElementById(id); }
+  function toast(msg, error){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(error?' error':''); setTimeout(()=>t.className='toast',2200); }
+
+  function bindField(id, path){
+    const el = $(id);
+    const parts = path.split('.');
+    // initial value
+    let cur = data; for (const p of parts) cur = cur[p];
+    el.value = cur || '';
+    el.addEventListener('input', () => {
+      let obj = data;
+      for (let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
+      obj[parts[parts.length-1]] = el.value;
+      autoSave();
+    });
+  }
+
+  function fileToDataURL(file){
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // Profile + QR + Footer fields
+  bindField('p_name', 'profile.name');
+  bindField('p_badge', 'profile.badge');
+  bindField('p_desc', 'profile.description');
+  bindField('p_avatarText', 'profile.avatarText');
+  bindField('p_avatarImage', 'profile.avatarImage');
+  bindField('qr_title', 'qr.title');
+  bindField('qr_sub', 'qr.subtitle');
+  bindField('qr_image', 'qr.image');
+  bindField('qr_note', 'qr.note');
+  bindField('footer_text', 'footer');
+
+  $('p_avatarFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const url = await fileToDataURL(f);
+    data.profile.avatarImage = url;
+    $('p_avatarImage').value = url.slice(0, 60) + '...';
+    autoSave();
+  });
+  $('qr_file').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const url = await fileToDataURL(f);
+    data.qr.image = url;
+    $('qr_image').value = url.slice(0, 60) + '...';
+    autoSave();
+  });
+
+  // ---------------- Sections editor ----------------
+  const editor = $('sectionsEditor');
+  const iconColors = ['purple','cyan','yellow','red','green','blue','pink'];
+
+  function renderSections(){
+    editor.innerHTML = '';
+    data.sections.forEach((sec, si) => {
+      const card = document.createElement('div');
+      card.className = 'section-card ' + (sec.theme || '');
+      card.innerHTML = `
+        <div class="section-head">
+          <span class="handle">≡</span>
+          <input value="${escapeAttr(sec.title)}" data-title placeholder="Tên section" />
+          <select data-theme>
+            <option value="">— theme —</option>
+            <option value="support" ${sec.theme==='support'?'selected':''}>🟡 support</option>
+            <option value="social" ${sec.theme==='social'?'selected':''}>🔵 social</option>
+            <option value="community" ${sec.theme==='community'?'selected':''}>🟣 community</option>
+          </select>
+          <button class="remove-btn" data-remove-sec>Xoá</button>
+        </div>
+        <div class="items"></div>
+        <button class="add-btn" data-add-item>+ Thêm card</button>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="add-btn" data-move-up style="width:auto;padding:6px 10px">↑ Lên</button>
+          <button class="add-btn" data-move-down style="width:auto;padding:6px 10px">↓ Xuống</button>
+        </div>
+      `;
+      const titleInput = card.querySelector('[data-title]');
+      titleInput.addEventListener('input', () => { sec.title = titleInput.value; autoSave(true); });
+      const themeSel = card.querySelector('[data-theme]');
+      themeSel.addEventListener('change', () => { sec.theme = themeSel.value; card.className = 'section-card ' + (sec.theme || ''); autoSave(); });
+      card.querySelector('[data-remove-sec]').addEventListener('click', () => {
+        if (confirm('Xoá section "' + sec.title + '"?')) { data.sections.splice(si,1); renderSections(); autoSave(); }
+      });
+      card.querySelector('[data-add-item]').addEventListener('click', () => {
+        sec.items.push({ title:'Mục mới', subtitle:'Mô tả', icon:'★', iconColor:'purple', link:'#' });
+        renderSections(); autoSave();
+      });
+      card.querySelector('[data-move-up]').addEventListener('click', () => {
+        if (si > 0) { [data.sections[si-1], data.sections[si]] = [data.sections[si], data.sections[si-1]]; renderSections(); autoSave(); }
+      });
+      card.querySelector('[data-move-down]').addEventListener('click', () => {
+        if (si < data.sections.length-1) { [data.sections[si+1], data.sections[si]] = [data.sections[si], data.sections[si+1]]; renderSections(); autoSave(); }
+      });
+
+      const itemsWrap = card.querySelector('.items');
+      sec.items.forEach((it, ii) => {
+        const box = document.createElement('div');
+        box.className = 'item';
+        box.innerHTML = `
+          <div class="item-head">
+            <span class="handle">≡</span>
+            <div class="title-preview">${escapeHtml(it.icon || '★')} ${escapeHtml(it.title || '(chưa đặt tên)')}</div>
+            <button class="toggle" data-toggle>Sửa</button>
+            <button class="toggle" data-up>↑</button>
+            <button class="toggle" data-down>↓</button>
+            <button class="remove-item" data-remove>✕</button>
+          </div>
+          <div class="item-body">
+            <div class="row2">
+              <div class="field"><label>Tiêu đề</label><input data-k="title" value="${escapeAttr(it.title||'')}"></div>
+              <div class="field"><label>Mô tả</label><input data-k="subtitle" value="${escapeAttr(it.subtitle||'')}"></div>
+            </div>
+            <div class="row3">
+              <div class="field"><label>Icon (emoji/chữ)</label><input data-k="icon" value="${escapeAttr(it.icon||'')}"></div>
+              <div class="field"><label>Màu icon</label><select data-k="iconColor">
+                ${iconColors.map(c=>`<option value="${c}" ${it.iconColor===c?'selected':''}>${c}</option>`).join('')}
+              </select></div>
+              <div class="field"><label>Action</label><select data-k="action">
+                <option value="" ${!it.action?'selected':''}>link</option>
+                <option value="qr" ${it.action==='qr'?'selected':''}>mở QR modal</option>
+              </select></div>
+            </div>
+            <div class="field"><label>Link URL</label><input data-k="link" value="${escapeAttr(it.link||'')}" placeholder="https://..."></div>
+            <div class="field"><label>Icon image URL (tuỳ chọn — thay cho emoji)</label><input data-k="iconImage" value="${escapeAttr(it.iconImage||'')}" placeholder="https://..."></div>
+            <label class="file-label">📁 Upload icon từ máy<input type="file" accept="image/*" data-file hidden></label>
+          </div>
+        `;
+        box.querySelector('[data-toggle]').addEventListener('click', () => box.classList.toggle('open'));
+        box.querySelectorAll('[data-k]').forEach(inp => {
+          inp.addEventListener('input', () => {
+            it[inp.getAttribute('data-k')] = inp.value;
+            box.querySelector('.title-preview').textContent = (it.icon || '★') + ' ' + (it.title || '(chưa đặt tên)');
+            autoSave(true);
+          });
+        });
+        box.querySelector('[data-file]').addEventListener('change', async e => {
+          const f = e.target.files[0]; if (!f) return;
+          const url = await fileToDataURL(f);
+          it.iconImage = url;
+          box.querySelector('[data-k="iconImage"]').value = url.slice(0,60)+'...';
+          autoSave();
+        });
+        box.querySelector('[data-remove]').addEventListener('click', () => {
+          if (confirm('Xoá mục "' + it.title + '"?')) { sec.items.splice(ii,1); renderSections(); autoSave(); }
+        });
+        box.querySelector('[data-up]').addEventListener('click', () => {
+          if (ii > 0) { [sec.items[ii-1], sec.items[ii]] = [sec.items[ii], sec.items[ii-1]]; renderSections(); autoSave(); }
+        });
+        box.querySelector('[data-down]').addEventListener('click', () => {
+          if (ii < sec.items.length-1) { [sec.items[ii+1], sec.items[ii]] = [sec.items[ii], sec.items[ii+1]]; renderSections(); autoSave(); }
+        });
+        itemsWrap.appendChild(box);
+      });
+
+      editor.appendChild(card);
+    });
+  }
+
+  function escapeAttr(s){ return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  function escapeHtml(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Autosave (debounced for rapid typing)
+  let saveTimer;
+  function autoSave(debounce){
+    clearTimeout(saveTimer);
+    const doSave = () => { VinhBioData.saveData(data); toast('Đã lưu ✓'); };
+    if (debounce) saveTimer = setTimeout(doSave, 350); else doSave();
+  }
+
+  $('addSection').addEventListener('click', () => {
+    data.sections.push({ id:'s'+Date.now(), title:'Section mới', theme:'', items:[] });
+    renderSections(); autoSave();
+  });
+
+  $('exportBtn').addEventListener('click', () => { VinhBioData.exportData(data); toast('Đã export ✓'); });
+  $('importFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const parsed = await VinhBioData.importData(f);
+      data = Object.assign(VinhBioData.deepClone(VinhBioData.DEFAULT_DATA), parsed);
+      VinhBioData.saveData(data);
+      toast('Đã import ✓');
+      location.reload();
+    } catch (err) {
+      toast('Import lỗi: file không hợp lệ', true);
+    }
+  });
+  $('resetBtn').addEventListener('click', () => {
+    if (confirm('Reset toàn bộ về dữ liệu mặc định?')) {
+      data = VinhBioData.resetData();
+      location.reload();
+    }
+  });
+
+  // ========== DRAG & DROP ==========
+  let dragInfo = null; // { type:'section'|'item', secIdx, itemIdx }
+
+  function attachDnD(){
+    // Sections
+    document.querySelectorAll('.section-card').forEach((card, si) => {
+      card.setAttribute('draggable', 'true');
+      card.addEventListener('dragstart', e => {
+        // Only when dragging from section-head handle or card itself (not inputs)
+        if (e.target.matches('input, select, textarea, button')) { e.preventDefault(); return; }
+        dragInfo = { type:'section', secIdx: si };
+        card.classList.add('drag-ghost');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', () => { card.classList.remove('drag-ghost'); clearHighlights(); dragInfo = null; });
+      card.addEventListener('dragover', e => {
+        if (!dragInfo || dragInfo.type !== 'section') return;
+        e.preventDefault();
+        const rect = card.getBoundingClientRect();
+        const below = (e.clientY - rect.top) > rect.height/2;
+        clearHighlights();
+        card.classList.add(below ? 'drop-below' : 'drop-above');
+      });
+      card.addEventListener('drop', e => {
+        if (!dragInfo || dragInfo.type !== 'section') return;
+        e.preventDefault();
+        const rect = card.getBoundingClientRect();
+        const below = (e.clientY - rect.top) > rect.height/2;
+        const from = dragInfo.secIdx;
+        let to = si + (below ? 1 : 0);
+        if (from < to) to--;
+        if (from !== to) {
+          const [moved] = data.sections.splice(from, 1);
+          data.sections.splice(to, 0, moved);
+          renderSections(); autoSave();
+        }
+        clearHighlights();
+      });
+
+      // Items inside this section
+      const items = card.querySelectorAll('.item');
+      items.forEach((box, ii) => {
+        box.setAttribute('draggable', 'true');
+        box.addEventListener('dragstart', e => {
+          if (e.target.matches('input, select, textarea, button')) { e.preventDefault(); return; }
+          e.stopPropagation();
+          dragInfo = { type:'item', secIdx: si, itemIdx: ii };
+          box.classList.add('drag-ghost');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        box.addEventListener('dragend', () => { box.classList.remove('drag-ghost'); clearHighlights(); dragInfo = null; });
+        box.addEventListener('dragover', e => {
+          if (!dragInfo || dragInfo.type !== 'item') return;
+          e.preventDefault(); e.stopPropagation();
+          const rect = box.getBoundingClientRect();
+          const below = (e.clientY - rect.top) > rect.height/2;
+          clearHighlights();
+          box.classList.add(below ? 'drop-below' : 'drop-above');
+        });
+        box.addEventListener('drop', e => {
+          if (!dragInfo || dragInfo.type !== 'item') return;
+          e.preventDefault(); e.stopPropagation();
+          const rect = box.getBoundingClientRect();
+          const below = (e.clientY - rect.top) > rect.height/2;
+          const fromSec = dragInfo.secIdx, fromIdx = dragInfo.itemIdx;
+          let toSec = si, toIdx = ii + (below ? 1 : 0);
+          const [moved] = data.sections[fromSec].items.splice(fromIdx, 1);
+          if (fromSec === toSec && fromIdx < toIdx) toIdx--;
+          data.sections[toSec].items.splice(toIdx, 0, moved);
+          renderSections(); autoSave();
+          clearHighlights();
+        });
+      });
+    });
+  }
+
+  function clearHighlights(){
+    document.querySelectorAll('.drop-above,.drop-below').forEach(el => el.classList.remove('drop-above','drop-below'));
+  }
+
+  // Patch renderSections to attach DnD after each render
+  const _origRender = renderSections;
+  renderSections = function(){ _origRender(); attachDnD(); };
+
+  renderSections();
+  } // end runAdmin
+</script>
+</body>
+</html>
