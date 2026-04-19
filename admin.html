@@ -117,11 +117,12 @@
 <div class="topbar" id="topbar" style="display:none">
   <h1>⚙ Admin — Vinh Automation AI</h1>
   <div class="spacer"></div>
+  <button class="btn primary" id="saveBtn">💾 Lưu chỉnh sửa</button>
   <button class="btn" id="exportBtn">⬇ Export</button>
   <label class="btn" for="importFile">⬆ Import</label>
   <input type="file" id="importFile" accept="application/json" style="display:none">
   <button class="btn danger" id="resetBtn">↺ Reset</button>
-  <a class="btn primary" href="index.html" target="_blank">👁 Xem trang</a>
+  <a class="btn" href="index.html" target="_blank">👁 Xem trang</a>
   <button class="btn danger" id="logoutBtn">⎋ Logout</button>
 </div>
 
@@ -129,7 +130,7 @@
   <!-- LEFT: Profile / QR / Footer -->
   <div>
     <div class="preview-info">
-      Dữ liệu được lưu tự động vào trình duyệt (localStorage). Nhấn <a href="index.html" target="_blank">Xem trang</a> để xem kết quả.
+      Trang này là editor localStorage.
     </div>
 
     <div class="panel">
@@ -139,19 +140,23 @@
       <div class="field"><label>Mô tả</label><textarea id="p_desc"></textarea></div>
       <div class="row2">
         <div class="field"><label>Avatar text (chữ viết tắt)</label><input id="p_avatarText" placeholder="VA"></div>
-        <div class="field"><label>Avatar image URL (ưu tiên)</label><input id="p_avatarImage" placeholder="https://..."></div>
+        <div class="field">
+          <label>Avatar image (chỉ upload từ máy)</label>
+          <label class="file-label" for="p_avatarFile">📁 Chọn ảnh từ máy</label>
+          <input type="file" id="p_avatarFile" class="file-input" accept="image/*">
+        </div>
       </div>
-      <label class="file-label" for="p_avatarFile">📁 Hoặc chọn ảnh từ máy</label>
-      <input type="file" id="p_avatarFile" class="file-input" accept="image/*">
     </div>
 
     <div class="panel" style="margin-top:18px">
       <h2>Modal QR (Mời cà phê)</h2>
       <div class="field"><label>Tiêu đề</label><input id="qr_title"></div>
       <div class="field"><label>Subtitle</label><input id="qr_sub"></div>
-      <div class="field"><label>QR image URL</label><input id="qr_image"></div>
-      <label class="file-label" for="qr_file">📁 Upload QR từ máy</label>
-      <input type="file" id="qr_file" class="file-input" accept="image/*">
+      <div class="field">
+        <label>QR image (chỉ upload từ máy)</label>
+        <label class="file-label" for="qr_file">📁 Upload QR từ máy</label>
+        <input type="file" id="qr_file" class="file-input" accept="image/*">
+      </div>
       <div class="field" style="margin-top:10px"><label>Ghi chú</label><input id="qr_note"></div>
     </div>
 
@@ -226,6 +231,7 @@
 
   function initAdmin(){
     document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (!confirmLoseChanges()) return;
       localStorage.removeItem(AUTH_KEY);
       location.reload();
     });
@@ -235,9 +241,22 @@
   function runAdmin(){
 
   let data = VinhBioData.loadData();
+  let isDirty = false;
 
   function $(id){ return document.getElementById(id); }
   function toast(msg, error){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(error?' error':''); setTimeout(()=>t.className='toast',2200); }
+
+  function markDirty(){ isDirty = true; }
+  function clearDirty(){ isDirty = false; }
+  function confirmLoseChanges(){
+    return !isDirty || confirm('Bạn có thay đổi chưa lưu. Thoát mà không lưu?');
+  }
+
+  window.addEventListener('beforeunload', (e) => {
+    if (!isDirty) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
 
   function bindField(id, path){
     const el = $(id);
@@ -267,10 +286,8 @@
   bindField('p_badge', 'profile.badge');
   bindField('p_desc', 'profile.description');
   bindField('p_avatarText', 'profile.avatarText');
-  bindField('p_avatarImage', 'profile.avatarImage');
   bindField('qr_title', 'qr.title');
   bindField('qr_sub', 'qr.subtitle');
-  bindField('qr_image', 'qr.image');
   bindField('qr_note', 'qr.note');
   bindField('footer_text', 'footer');
 
@@ -278,14 +295,14 @@
     const f = e.target.files[0]; if (!f) return;
     const url = await fileToDataURL(f);
     data.profile.avatarImage = url;
-    $('p_avatarImage').value = url.slice(0, 60) + '...';
+    toast('Đã cập nhật avatar ✓');
     autoSave();
   });
   $('qr_file').addEventListener('change', async e => {
     const f = e.target.files[0]; if (!f) return;
     const url = await fileToDataURL(f);
     data.qr.image = url;
-    $('qr_image').value = url.slice(0, 60) + '...';
+    toast('Đã cập nhật QR ✓');
     autoSave();
   });
 
@@ -364,8 +381,10 @@
               </select></div>
             </div>
             <div class="field"><label>Link URL</label><input data-k="link" value="${escapeAttr(it.link||'')}" placeholder="https://..."></div>
-            <div class="field"><label>Icon image URL (tuỳ chọn — thay cho emoji)</label><input data-k="iconImage" value="${escapeAttr(it.iconImage||'')}" placeholder="https://..."></div>
-            <label class="file-label">📁 Upload icon từ máy<input type="file" accept="image/*" data-file hidden></label>
+            <div class="field">
+              <label>Icon image (chỉ upload từ máy)</label>
+              <label class="file-label">📁 Upload icon từ máy<input type="file" accept="image/*" data-file hidden></label>
+            </div>
           </div>
         `;
         box.querySelector('[data-toggle]').addEventListener('click', () => box.classList.toggle('open'));
@@ -380,7 +399,7 @@
           const f = e.target.files[0]; if (!f) return;
           const url = await fileToDataURL(f);
           it.iconImage = url;
-          box.querySelector('[data-k="iconImage"]').value = url.slice(0,60)+'...';
+          toast('Đã cập nhật icon ✓');
           autoSave();
         });
         box.querySelector('[data-remove]').addEventListener('click', () => {
@@ -402,13 +421,19 @@
   function escapeAttr(s){ return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
   function escapeHtml(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  // Autosave (debounced for rapid typing)
-  let saveTimer;
-  function autoSave(debounce){
-    clearTimeout(saveTimer);
-    const doSave = () => { VinhBioData.saveData(data); toast('Đã lưu ✓'); };
-    if (debounce) saveTimer = setTimeout(doSave, 350); else doSave();
+  // Staged edits: only persist when clicking Save
+  function autoSave(){
+    // legacy calls: mark dirty only
+    markDirty();
   }
+
+  function commitSave(){
+    VinhBioData.saveData(data);
+    clearDirty();
+    toast('Đã lưu ✓');
+  }
+
+  $('saveBtn').addEventListener('click', commitSave);
 
   $('addSection').addEventListener('click', () => {
     data.sections.push({ id:'s'+Date.now(), title:'Section mới', theme:'', items:[] });
@@ -417,11 +442,13 @@
 
   $('exportBtn').addEventListener('click', () => { VinhBioData.exportData(data); toast('Đã export ✓'); });
   $('importFile').addEventListener('change', async e => {
+    if (!confirmLoseChanges()) { e.target.value = ''; return; }
     const f = e.target.files[0]; if (!f) return;
     try {
       const parsed = await VinhBioData.importData(f);
       data = Object.assign(VinhBioData.deepClone(VinhBioData.DEFAULT_DATA), parsed);
-      VinhBioData.saveData(data);
+      clearDirty();
+      commitSave();
       toast('Đã import ✓');
       location.reload();
     } catch (err) {
@@ -429,8 +456,11 @@
     }
   });
   $('resetBtn').addEventListener('click', () => {
+    if (!confirmLoseChanges()) return;
     if (confirm('Reset toàn bộ về dữ liệu mặc định?')) {
       data = VinhBioData.resetData();
+      clearDirty();
+      commitSave();
       location.reload();
     }
   });
