@@ -161,6 +161,13 @@
     </div>
 
     <div class="panel" style="margin-top:18px">
+      <h2>🎁 Nhận quà từ Vinh (hiển thị cả trên & dưới trang chủ)</h2>
+      <div class="field"><label>Tiêu đề</label><input id="gift_title"></div>
+      <div class="field"><label>Mô tả</label><input id="gift_sub"></div>
+      <div class="field"><label>Link nhận quà</label><input id="gift_link" placeholder="https://..."></div>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
       <h2>Footer</h2>
       <div class="field"><label>Footer text</label><input id="footer_text"></div>
     </div>
@@ -281,7 +288,7 @@
     });
   }
 
-  // Profile + QR + Footer fields
+  // Profile + QR + Gift + Footer fields
   bindField('p_name', 'profile.name');
   bindField('p_badge', 'profile.badge');
   bindField('p_desc', 'profile.description');
@@ -289,6 +296,9 @@
   bindField('qr_title', 'qr.title');
   bindField('qr_sub', 'qr.subtitle');
   bindField('qr_note', 'qr.note');
+  bindField('gift_title', 'gift.title');
+  bindField('gift_sub', 'gift.subtitle');
+  bindField('gift_link', 'gift.link');
   bindField('footer_text', 'footer');
 
   $('p_avatarFile').addEventListener('change', async e => {

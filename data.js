@@ -23,6 +23,11 @@
       note: "Cảm ơn bạn đã ủng hộ 💜",
     },
     footer: "© 2026 Vinh Automation AI — Powered by AI & Automation",
+    gift: {
+      title: "Nhận quà từ Vinh",
+      subtitle: "Nhận tài nguyên & ưu đãi miễn phí (có giới hạn)",
+      link: "#"
+    },
     sections: [
       {
         id: "support",
