@@ -1,10 +1,13 @@
 /* ============================================================
    Vinh Automation AI — Shared data layer
    - Default content
+   - Supabase sync with localStorage fallback
    - localStorage helpers (load / save / reset / export / import)
    ============================================================ */
 (function (global) {
   const STORAGE_KEY = "vinh_bio_data_v1";
+  const SUPABASE_URL = "https://asffrqugifhmiwvyddrn.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzZmZycXVnaWZobWl3dnlkZHJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MjQ0NjYsImV4cCI6MjA5MjEwMDQ2Nn0.T-jWxcRLiOYZXMla4QCoShhO32i-yToFrtL5zj665kY";
 
   const DEFAULT_DATA = {
     profile: {
@@ -176,14 +179,110 @@
     });
   }
 
+  // ============================================================
+  // SUPABASE SYNC LAYER
+  // ============================================================
+  function getAuthToken() {
+    try {
+      const raw = localStorage.getItem("vinh_bio_sb_session");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && parsed.access_token ? parsed.access_token : null;
+    } catch (e) { return null; }
+  }
+
+  async function sbFetch(path, options) {
+    options = options || {};
+    const token = getAuthToken();
+    const headers = Object.assign({
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + (token || SUPABASE_ANON_KEY),
+      "Content-Type": "application/json",
+    }, options.headers || {});
+    const res = await fetch(SUPABASE_URL + path, Object.assign({}, options, { headers }));
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error("Supabase " + res.status + ": " + text);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  // Load data from Supabase; fallback to localStorage/default on error
+  async function loadDataRemote() {
+    try {
+      const rows = await sbFetch("/rest/v1/bio_data?id=eq.1&select=data", { method: "GET" });
+      if (rows && rows.length && rows[0].data && Object.keys(rows[0].data).length > 0) {
+        const remote = rows[0].data;
+        const merged = Object.assign(deepClone(DEFAULT_DATA), remote);
+        // cache locally
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch (e) {}
+        return merged;
+      }
+    } catch (e) {
+      console.warn("Supabase load failed, using local cache", e);
+    }
+    return loadData();
+  }
+
+  // Save data to Supabase (requires authenticated session); also cache locally
+  async function saveDataRemote(data) {
+    // always cache locally first
+    saveData(data);
+    const body = JSON.stringify({ id: 1, data: data, updated_at: new Date().toISOString() });
+    await sbFetch("/rest/v1/bio_data?on_conflict=id", {
+      method: "POST",
+      headers: { "Prefer": "resolution=merge-duplicates,return=minimal" },
+      body: body,
+    });
+    return true;
+  }
+
+  // Login via Supabase Auth
+  async function signIn(email, password) {
+    const res = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: password }),
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(t);
+    }
+    const session = await res.json();
+    localStorage.setItem("vinh_bio_sb_session", JSON.stringify(session));
+    return session;
+  }
+
+  function signOut() {
+    localStorage.removeItem("vinh_bio_sb_session");
+  }
+
+  function isSignedIn() {
+    const tok = getAuthToken();
+    if (!tok) return false;
+    try {
+      const payload = JSON.parse(atob(tok.split('.')[1]));
+      return payload.exp * 1000 > Date.now();
+    } catch (e) { return false; }
+  }
+
   global.VinhBioData = {
     DEFAULT_DATA,
     STORAGE_KEY,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     loadData,
     saveData,
     resetData,
     exportData,
     importData,
     deepClone,
+    // remote
+    loadDataRemote,
+    saveDataRemote,
+    signIn,
+    signOut,
+    isSignedIn,
   };
 })(window);

@@ -159,7 +159,24 @@
 
 <script src="data.js"></script>
 <script>
-  const data = VinhBioData.loadData();
+  let data = VinhBioData.loadData();
+
+  // load from Supabase asynchronously and re-render if remote differs from cache
+  VinhBioData.loadDataRemote().then(remoteData => {
+    const cached = JSON.stringify(data);
+    const fresh = JSON.stringify(remoteData);
+    if (cached !== fresh) {
+      // new data from server - refresh silently once
+      if (!sessionStorage.getItem("vinh_bio_refreshed")) {
+        sessionStorage.setItem("vinh_bio_refreshed", "1");
+        location.reload();
+      }
+    } else {
+      sessionStorage.removeItem("vinh_bio_refreshed");
+    }
+  }).catch(e => {
+    console.log("Using cached local data", e);
+  });
 
   // Profile
   const avatarInner = document.getElementById('avatarInner');

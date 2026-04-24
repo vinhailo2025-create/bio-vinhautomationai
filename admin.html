@@ -188,26 +188,22 @@
 <script src="data.js"></script>
 <script>
   // ========== AUTH ==========
-  // Client-side gate only. SHA-256 hash of the password, email kept visible.
+  // Supabase Auth instead of client-side hash
   const ADMIN_EMAIL = 'vinhailo2025@gmail.com';
-  // SHA-256("VinhAI@2025")
-  const ADMIN_PASS_HASH = '2a4d8df3c6c8f3fb76b4b1db0a16e2db6d5d3f0d1f5e9d7b9f4c9a3c4c1c2e6d'; // placeholder overwritten below
   const AUTH_KEY = 'vinh_bio_auth_v1';
 
-  async function sha256(str){
-    const buf = new TextEncoder().encode(str);
-    const h = await crypto.subtle.digest('SHA-256', buf);
-    return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,'0')).join('');
-  }
-
   async function checkLogin(email, pass){
-    const hash = await sha256(pass);
-    const expected = await sha256('VinhAI@2025'); // computed at runtime
-    return email.trim().toLowerCase() === ADMIN_EMAIL && hash === expected;
+    try {
+      await VinhBioData.signIn(email, pass);
+      return true;
+    } catch (e) {
+      console.log("Login failed", e);
+      return false;
+    }
   }
 
   function isLoggedIn(){
-    return localStorage.getItem(AUTH_KEY) === 'ok';
+    return VinhBioData.isSignedIn();
   }
 
   function showApp(){
@@ -223,7 +219,6 @@
     err.textContent = '';
     const ok = await checkLogin(email, pass);
     if (ok) {
-      localStorage.setItem(AUTH_KEY, 'ok');
       showApp();
       initAdmin();
     } else {
@@ -239,16 +234,23 @@
   function initAdmin(){
     document.getElementById('logoutBtn').addEventListener('click', () => {
       if (!confirmLoseChanges()) return;
-      localStorage.removeItem(AUTH_KEY);
+      VinhBioData.signOut();
       location.reload();
     });
     runAdmin();
   }
 
-  function runAdmin(){
+  async function runAdmin(){
 
   let data = VinhBioData.loadData();
   let isDirty = false;
+
+  // Load latest from Supabase on admin open
+  try {
+    data = await VinhBioData.loadDataRemote();
+  } catch (e) {
+    console.warn("Could not load from Supabase, using local cache", e);
+  }
 
   function $(id){ return document.getElementById(id); }
   function toast(msg, error){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(error?' error':''); setTimeout(()=>t.className='toast',2200); }
@@ -439,8 +441,15 @@
 
   function commitSave(){
     VinhBioData.saveData(data);
-    clearDirty();
-    toast('Đã lưu ✓');
+    // save to Supabase asynchronously
+    VinhBioData.saveDataRemote(data).then(() => {
+      clearDirty();
+      toast('Đã lưu ✓');
+    }).catch(e => {
+      toast('Lưu lỗi: ' + String(e), true);
+      // data still cached locally
+      clearDirty();
+    });
   }
 
   $('saveBtn').addEventListener('click', commitSave);
@@ -457,20 +466,23 @@
     try {
       const parsed = await VinhBioData.importData(f);
       data = Object.assign(VinhBioData.deepClone(VinhBioData.DEFAULT_DATA), parsed);
+      VinhBioData.saveData(data);
+      await VinhBioData.saveDataRemote(data);
       clearDirty();
-      commitSave();
       toast('Đã import ✓');
-      location.reload();
+      setTimeout(() => location.reload(), 400);
     } catch (err) {
-      toast('Import lỗi: file không hợp lệ', true);
+      toast('Import lỗi: ' + String(err), true);
     }
   });
-  $('resetBtn').addEventListener('click', () => {
+  $('resetBtn').addEventListener('click', async () => {
     if (!confirmLoseChanges()) return;
     if (confirm('Reset toàn bộ về dữ liệu mặc định?')) {
       data = VinhBioData.resetData();
+      try {
+        await VinhBioData.saveDataRemote(data);
+      } catch (e) { toast('Reset Supabase lỗi: ' + String(e), true); }
       clearDirty();
-      commitSave();
       location.reload();
     }
   });
