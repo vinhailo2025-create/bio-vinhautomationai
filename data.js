@@ -182,24 +182,85 @@
   // ============================================================
   // SUPABASE SYNC LAYER
   // ============================================================
-  function getAuthToken() {
+  const SESSION_KEY = "vinh_bio_sb_session";
+
+  function getSession() {
     try {
-      const raw = localStorage.getItem("vinh_bio_sb_session");
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return parsed && parsed.access_token ? parsed.access_token : null;
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
+  }
+
+  function setSession(session) {
+    if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    else localStorage.removeItem(SESSION_KEY);
+  }
+
+  function tokenExpiresSoon(token, leewaySec) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return (payload.exp * 1000) - Date.now() < (leewaySec || 60) * 1000;
+    } catch (e) { return true; }
+  }
+
+  function getAuthToken() {
+    const s = getSession();
+    return s && s.access_token ? s.access_token : null;
+  }
+
+  async function refreshSession() {
+    const s = getSession();
+    if (!s || !s.refresh_token) return null;
+    try {
+      const res = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: s.refresh_token }),
+      });
+      if (!res.ok) {
+        // refresh token invalid -> clear session so user re-logs in
+        setSession(null);
+        return null;
+      }
+      const fresh = await res.json();
+      setSession(fresh);
+      return fresh.access_token;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function getValidAuthToken() {
+    let token = getAuthToken();
+    if (token && tokenExpiresSoon(token, 60)) {
+      const refreshed = await refreshSession();
+      if (refreshed) token = refreshed;
+    }
+    return token;
   }
 
   async function sbFetch(path, options) {
     options = options || {};
-    const token = getAuthToken();
+    const token = await getValidAuthToken();
     const headers = Object.assign({
       "apikey": SUPABASE_ANON_KEY,
       "Authorization": "Bearer " + (token || SUPABASE_ANON_KEY),
       "Content-Type": "application/json",
     }, options.headers || {});
-    const res = await fetch(SUPABASE_URL + path, Object.assign({}, options, { headers }));
+    let res = await fetch(SUPABASE_URL + path, Object.assign({}, options, { headers }));
+
+    // Retry once if JWT expired mid-request
+    if (res.status === 401 && token) {
+      const text401 = await res.clone().text();
+      if (/JWT expired|PGRST303/i.test(text401)) {
+        const refreshed = await refreshSession();
+        if (refreshed) {
+          headers["Authorization"] = "Bearer " + refreshed;
+          res = await fetch(SUPABASE_URL + path, Object.assign({}, options, { headers }));
+        }
+      }
+    }
+
     if (!res.ok) {
       const text = await res.text();
       throw new Error("Supabase " + res.status + ": " + text);
@@ -250,21 +311,20 @@
       throw new Error(t);
     }
     const session = await res.json();
-    localStorage.setItem("vinh_bio_sb_session", JSON.stringify(session));
+    setSession(session);
     return session;
   }
 
   function signOut() {
-    localStorage.removeItem("vinh_bio_sb_session");
+    setSession(null);
   }
 
   function isSignedIn() {
-    const tok = getAuthToken();
-    if (!tok) return false;
-    try {
-      const payload = JSON.parse(atob(tok.split('.')[1]));
-      return payload.exp * 1000 > Date.now();
-    } catch (e) { return false; }
+    const s = getSession();
+    if (!s || !s.access_token) return false;
+    // Has refresh_token => can renew even if access_token is expired
+    if (s.refresh_token) return true;
+    return !tokenExpiresSoon(s.access_token, 0);
   }
 
   global.VinhBioData = {
